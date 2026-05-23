@@ -18,6 +18,7 @@ export function App() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState(DEFAULT_EMAIL);
   const [password, setPassword] = useState(DEFAULT_PASSWORD);
+  const [name, setName] = useState('');
   const [toast, setToast] = useState<Toast | null>(null);
   const { login, register, logout, loading: authLoading, isAuthed } = useAuth();
   const today = new Date().toISOString().slice(0, 10);
@@ -45,9 +46,17 @@ export function App() {
   }, [isAuthed]);
 
   const onAuth = async () => {
+    if (!email.trim() || !password.trim()) {
+      setToast({ type: 'error', message: 'Email and password are required.' });
+      return;
+    }
+    if (authMode === 'register' && !name.trim()) {
+      setToast({ type: 'error', message: 'Please enter your name to create an account.' });
+      return;
+    }
     try {
       if (authMode === 'login') await login(email, password);
-      else await register(email, password);
+      else await register(email, password, name);
       setToast({ type: 'success', message: authMode === 'login' ? 'Welcome back!' : 'Account created and signed in.' });
     } catch {
       setToast({ type: 'error', message: `Unable to ${authMode}. Please check your details.` });
@@ -122,15 +131,19 @@ export function App() {
 
         {!isAuthed && (
           <div className="my-4 rounded-2xl border border-white/10 p-4 bg-black/10">
+            <h2 className="text-sm font-semibold mb-1">Get started</h2>
+            <p className="text-xs text-white/70 mb-3">Create an account to save logs, generate plans, and keep your chat context.</p>
             <div className="flex gap-2 mb-3 text-sm">
               <button className={`px-3 py-1.5 rounded-lg ${authMode === 'login' ? 'bg-cyan-400 text-black' : 'bg-white/10'}`} onClick={() => setAuthMode('login')}>Login</button>
               <button className={`px-3 py-1.5 rounded-lg ${authMode === 'register' ? 'bg-cyan-400 text-black' : 'bg-white/10'}`} onClick={() => setAuthMode('register')}>Register</button>
             </div>
-            <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-4">
+              {authMode === 'register' && <input className="rounded-lg p-2.5 text-black" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full Name" />}
               <input className="rounded-lg p-2.5 text-black" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" />
               <input className="rounded-lg p-2.5 text-black" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" />
               <button className="rounded-lg bg-cyan-400 text-black font-medium" onClick={onAuth} disabled={authLoading}>{authLoading ? 'Please wait...' : authMode === 'login' ? 'Sign In' : 'Create Account'}</button>
             </div>
+            <p className="text-xs text-white/70 mt-2">Password must be 10-72 chars and contain both letters and numbers.</p>
           </div>
         )}
 
@@ -149,6 +162,14 @@ export function App() {
       </section>
 
       <aside className="grid gap-4">
+        <div className="rounded-2xl bg-white/5 p-4 border border-white/10">
+          <h3 className="font-semibold mb-2">How to use NutriFlow</h3>
+          <ol className="text-sm text-white/80 list-decimal pl-5 space-y-1">
+            <li>{isAuthed ? 'You are signed in. Start by chatting your goals and preferences.' : 'Login or register first to unlock saved plans and logs.'}</li>
+            <li>Update your Daily Tracking values and click <strong>Save Daily</strong>.</li>
+            <li>Click <strong>Generate Plan</strong> to build a grocery list tailored to your profile.</li>
+          </ol>
+        </div>
         <div className="rounded-2xl bg-white/5 p-4 border border-white/10">
           <div className="text-sm text-white/75">Wellness Score</div>
           <div className="text-4xl font-bold mt-1">{score}</div>
