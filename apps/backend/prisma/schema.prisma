@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+  url      = "file:./dev.db"
 }
 
 model User {
@@ -27,7 +27,7 @@ model Conversation {
   userId    String
   user      User      @relation(fields: [userId], references: [id])
   messages  Message[]
-  meta      Json?
+  meta      String?
   createdAt DateTime  @default(now())
 }
 
@@ -45,7 +45,7 @@ model MealPlan {
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   title     String
-  days      Json
+  days      String
   createdAt DateTime @default(now())
 }
 
@@ -53,7 +53,7 @@ model GroceryList {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  sections  Json
+  sections  String
   createdAt DateTime @default(now())
 }
 
@@ -62,7 +62,7 @@ model Recipe {
   userId       String
   user         User     @relation(fields: [userId], references: [id])
   name         String
-  ingredients  Json
+  ingredients  String
   instructions String
   favorite     Boolean  @default(false)
 }
@@ -71,11 +71,11 @@ model Preference {
   id          String @id @default(cuid())
   userId      String @unique
   user        User   @relation(fields: [userId], references: [id])
-  allergies   Json
-  restrictions Json
+  allergies   String
+  restrictions String
   budget      Int
   cookingSkill String
-  equipment   Json
+  equipment   String
 }
 
 model NutritionProfile {
