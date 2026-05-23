@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import OpenAI from 'openai';
 import { PrismaService } from '../prisma/prisma.service';
 import { calculateNutrition } from '../nutrition/engine';
@@ -8,7 +8,7 @@ import { activityMap, onboardingFlow, OnboardingField } from './onboarding';
 
 @Injectable()
 export class AiService {
-  private client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  private client: OpenAI | null = null;
   constructor(private prisma: PrismaService) {}
 
   private parseInput(field: OnboardingField, text: string): string {
@@ -19,6 +19,18 @@ export class AiService {
   private nextQuestion(profile: Record<string, string>) {
     const next = onboardingFlow.find((f) => !profile[f.field]);
     return next?.question;
+  }
+
+  private getClient(): OpenAI {
+    if (this.client) return this.client;
+
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new ServiceUnavailableException('OPENAI_API_KEY is not configured. Add it to apps/backend/.env or the repository root .env.');
+    }
+
+    this.client = new OpenAI({ apiKey });
+    return this.client;
   }
 
   async chat(userId: string, message: string, conversationId?: string) {
@@ -53,7 +65,7 @@ export class AiService {
       });
       await this.prisma.preference.upsert({
         where: { userId },
-                update: { allergies: meta.allergies ? meta.allergies.split(',').map((s) => s.trim()).filter(Boolean).join(', ') : '', restrictions: meta.dietType ?? '', budget: Number(meta.weeklyBudget || 120), cookingSkill: 'intermediate', equipment: '' },
+        update: { allergies: meta.allergies ? meta.allergies.split(',').map((s) => s.trim()).filter(Boolean).join(', ') : '', restrictions: meta.dietType ?? '', budget: Number(meta.weeklyBudget || 120), cookingSkill: 'intermediate', equipment: '' },
         create: { userId, allergies: meta.allergies ? meta.allergies.split(',').map((s) => s.trim()).filter(Boolean).join(', ') : '', restrictions: meta.dietType ?? '', budget: Number(meta.weeklyBudget || 120), cookingSkill: 'intermediate', equipment: '' }
       });
       reply = `Awesome — profile complete. Targets: **${nutrition.calories} kcal**, **P ${nutrition.proteinG}g / C ${nutrition.carbsG}g / F ${nutrition.fatsG}g**. Want a 3-day or 7-day meal plan first?`;
@@ -61,7 +73,7 @@ export class AiService {
 
     if (message.toLowerCase().includes('meal plan') || message.toLowerCase().includes('7-day') || message.toLowerCase().includes('3-day')) {
       const contextMessages = (conversation?.messages ?? []).slice().reverse().map((m: any) => ({ role: m.role as 'user' | 'assistant', content: String(m.content).slice(0, 800) }));
-      const completion = await this.client.chat.completions.create({
+      const completion = await this.getClient().chat.completions.create({
         model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
         messages: [{ role: 'system', content: NUTRIFLOW_SYSTEM_PROMPT }, ...contextMessages, { role: 'user', content: message }],
         temperature: 0.5,
@@ -77,7 +89,7 @@ export class AiService {
 
   async generatePlan(dto: GeneratePlanDto) {
     const userPrompt = `Generate a ${dto.days}-day plan at ${dto.calories} kcal/day with macros P:${dto.proteinG} C:${dto.carbsG} F:${dto.fatsG}. Diet: ${dto.dietType}. Allergies: ${dto.allergies.join(', ') || 'none'}. Avoid: ${dto.dislikedFoods.join(', ') || 'none'}. Weekly budget: $${dto.weeklyBudget}.`;
-    const completion = await this.client.chat.completions.create({
+    const completion = await this.getClient().chat.completions.create({
       model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
       response_format: { type: 'json_object' },
       messages: [{ role: 'system', content: JSON_MEAL_PLAN_PROMPT }, { role: 'user', content: userPrompt }],
