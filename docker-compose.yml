@@ -1,0 +1,7 @@
+services:
+  app:
+    build: .
+    env_file: .env.example
+    ports: ["4000:4000","5173:5173"]
+    volumes:
+      - ./:/app
