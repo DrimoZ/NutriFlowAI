@@ -27,7 +27,7 @@ model Conversation {
   userId    String
   user      User      @relation(fields: [userId], references: [id])
   messages  Message[]
-  meta      String?
+  meta      Json?
   createdAt DateTime  @default(now())
 }
 
@@ -45,7 +45,7 @@ model MealPlan {
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   title     String
-  days      String
+  days      Json
   createdAt DateTime @default(now())
 }
 
@@ -53,7 +53,7 @@ model GroceryList {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
-  sections  String
+  sections  Json
   createdAt DateTime @default(now())
 }
 
@@ -62,7 +62,7 @@ model Recipe {
   userId       String
   user         User     @relation(fields: [userId], references: [id])
   name         String
-  ingredients  String
+  ingredients  Json
   instructions String
   favorite     Boolean  @default(false)
 }
@@ -71,11 +71,11 @@ model Preference {
   id          String @id @default(cuid())
   userId      String @unique
   user        User   @relation(fields: [userId], references: [id])
-  allergies   String
-  restrictions String
+  allergies   Json
+  restrictions Json
   budget      Int
   cookingSkill String
-  equipment   String
+  equipment   Json
 }
 
 model NutritionProfile {
