@@ -29,10 +29,11 @@ export function useAuth() {
     }
   };
 
-  const register = async (email: string, password: string) => {
+  const register = async (email: string, password: string, name?: string) => {
     setLoading(true);
     try {
-      await api.post('/auth/register', { email, password });
+      const inferredName = email.split('@')[0]?.trim() || 'New User';
+      await api.post('/auth/register', { email, password, name: name?.trim() || inferredName });
       return login(email, password);
     } finally {
       setLoading(false);
