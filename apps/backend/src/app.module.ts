@@ -13,7 +13,10 @@ import { DailyLogsModule } from './daily-logs/daily-logs.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env', '../../.env']
+    }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     AuthModule,
     UsersModule,
