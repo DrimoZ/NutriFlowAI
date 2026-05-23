@@ -29,7 +29,7 @@ export class AiService {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, include: { nutritionProfile: true, preference: true } });
     const meta = (conversation?.meta as Record<string, string> | null) ?? {};
 
-    const lastAssistant = conversation?.messages.filter((m) => m.role === 'assistant').at(-1)?.content ?? '';
+    const lastAssistant = conversation?.messages.find((m: any) => m.role === 'assistant')?.content ?? '';
     const expected = onboardingFlow.find((x) => lastAssistant.includes(x.question));
     if (expected) meta[expected.field] = this.parseInput(expected.field, message);
 
@@ -53,14 +53,14 @@ export class AiService {
       });
       await this.prisma.preference.upsert({
         where: { userId },
-        update: { allergies: meta.allergies ? meta.allergies.split(',').map((s) => s.trim()) : [], restrictions: meta.dietType ? [meta.dietType] : [], budget: Number(meta.weeklyBudget || 120), cookingSkill: 'intermediate', equipment: [] },
-        create: { userId, allergies: meta.allergies ? meta.allergies.split(',').map((s) => s.trim()) : [], restrictions: meta.dietType ? [meta.dietType] : [], budget: Number(meta.weeklyBudget || 120), cookingSkill: 'intermediate', equipment: [] }
+                update: { allergies: meta.allergies ? meta.allergies.split(',').map((s) => s.trim()).filter(Boolean).join(', ') : '', restrictions: meta.dietType ?? '', budget: Number(meta.weeklyBudget || 120), cookingSkill: 'intermediate', equipment: '' },
+        create: { userId, allergies: meta.allergies ? meta.allergies.split(',').map((s) => s.trim()).filter(Boolean).join(', ') : '', restrictions: meta.dietType ?? '', budget: Number(meta.weeklyBudget || 120), cookingSkill: 'intermediate', equipment: '' }
       });
       reply = `Awesome — profile complete. Targets: **${nutrition.calories} kcal**, **P ${nutrition.proteinG}g / C ${nutrition.carbsG}g / F ${nutrition.fatsG}g**. Want a 3-day or 7-day meal plan first?`;
     }
 
     if (message.toLowerCase().includes('meal plan') || message.toLowerCase().includes('7-day') || message.toLowerCase().includes('3-day')) {
-      const contextMessages = (conversation?.messages ?? []).slice().reverse().map((m) => ({ role: m.role as 'user' | 'assistant', content: String(m.content).slice(0, 800) }));
+      const contextMessages = (conversation?.messages ?? []).slice().reverse().map((m: any) => ({ role: m.role as 'user' | 'assistant', content: String(m.content).slice(0, 800) }));
       const completion = await this.client.chat.completions.create({
         model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
         messages: [{ role: 'system', content: NUTRIFLOW_SYSTEM_PROMPT }, ...contextMessages, { role: 'user', content: message }],
