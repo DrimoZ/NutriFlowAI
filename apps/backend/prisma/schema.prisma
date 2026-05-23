@@ -1,25 +1,108 @@
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "sqlite" url = env("DATABASE_URL") }
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
 
 model User {
-  id String @id @default(cuid())
-  email String @unique
-  name String
-  passwordHash String
-  conversations Conversation[]
-  mealPlans MealPlan[]
-  groceryLists GroceryList[]
-  recipes Recipe[]
-  dailyLogs DailyLog[]
-  preference Preference?
+  id               String            @id @default(cuid())
+  email            String            @unique
+  name             String
+  passwordHash     String
+  conversations    Conversation[]
+  mealPlans        MealPlan[]
+  groceryLists     GroceryList[]
+  recipes          Recipe[]
+  dailyLogs        DailyLog[]
+  preference       Preference?
   nutritionProfile NutritionProfile?
+  createdAt        DateTime          @default(now())
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  messages  Message[]
+  meta      Json?
+  createdAt DateTime  @default(now())
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  role           String
+  content        String
+  createdAt      DateTime     @default(now())
+}
+
+model MealPlan {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  days      Json
   createdAt DateTime @default(now())
 }
-model Conversation { id String @id @default(cuid()) userId String user User @relation(fields:[userId], references:[id]) messages Message[] meta Json? createdAt DateTime @default(now()) }
-model Message { id String @id @default(cuid()) conversationId String conversation Conversation @relation(fields:[conversationId], references:[id]) role String content String createdAt DateTime @default(now()) }
-model MealPlan { id String @id @default(cuid()) userId String user User @relation(fields:[userId], references:[id]) title String days Json createdAt DateTime @default(now()) }
-model GroceryList { id String @id @default(cuid()) userId String user User @relation(fields:[userId], references:[id]) sections Json createdAt DateTime @default(now()) }
-model Recipe { id String @id @default(cuid()) userId String user User @relation(fields:[userId], references:[id]) name String ingredients Json instructions String favorite Boolean @default(false) }
-model Preference { id String @id @default(cuid()) userId String @unique user User @relation(fields:[userId], references:[id]) allergies String[] restrictions String[] budget Int cookingSkill String equipment String[] }
-model NutritionProfile { id String @id @default(cuid()) userId String @unique user User @relation(fields:[userId], references:[id]) age Int sex String heightCm Float weightKg Float activityLevel String goal String tdee Int calories Int proteinG Int carbsG Int fatsG Int }
-model DailyLog { id String @id @default(cuid()) userId String user User @relation(fields:[userId], references:[id]) waterMl Int sleepHours Float steps Int mood Int date String createdAt DateTime @default(now()) }
+
+model GroceryList {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  sections  Json
+  createdAt DateTime @default(now())
+}
+
+model Recipe {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  name         String
+  ingredients  Json
+  instructions String
+  favorite     Boolean  @default(false)
+}
+
+model Preference {
+  id          String @id @default(cuid())
+  userId      String @unique
+  user        User   @relation(fields: [userId], references: [id])
+  allergies   Json
+  restrictions Json
+  budget      Int
+  cookingSkill String
+  equipment   Json
+}
+
+model NutritionProfile {
+  id            String @id @default(cuid())
+  userId        String @unique
+  user          User   @relation(fields: [userId], references: [id])
+  age           Int
+  sex           String
+  heightCm      Float
+  weightKg      Float
+  activityLevel String
+  goal          String
+  tdee          Int
+  calories      Int
+  proteinG      Int
+  carbsG        Int
+  fatsG         Int
+}
+
+model DailyLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  waterMl    Int
+  sleepHours Float
+  steps      Int
+  mood       Int
+  date       String
+  createdAt  DateTime @default(now())
+}
